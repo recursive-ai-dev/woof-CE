@@ -142,7 +142,7 @@ build_grub2_cfg() {
 	fi
 	cat >> $outfile <<EOF # append
 menuentry "${distrodesc}" {
-    linux /vmlinuz pmedia=cd $bootopts $loopback
+    linux /vmlinuz pmedia=cd $bootopts $loopback $EXTRA_KERNEL_PARAMS
     $INITRDMSG
     $INITRDG
 }
@@ -164,7 +164,7 @@ build_menu_lst() {
 	fi
 	cat >> $outfile <<EOF # append
 title ${distrodesc}
-  kernel /vmlinuz    pmedia=cd $bootopts
+  kernel /vmlinuz    pmedia=cd $bootopts $EXTRA_KERNEL_PARAMS
   $INITRDM
 
 EOF

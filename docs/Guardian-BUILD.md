@@ -1,4 +1,4 @@
-# Guardian — build your own minimal, airgapped x86_64 UEFI Puppy
+ — build your own minimal, airgapped x86_64 UEFI Puppy
 
 **Guardian (guardian64)** is a woof-CE build profile for a minimal, hardened,
 close-to-airgapped Puppy Linux for **x86_64 UEFI** machines:
@@ -151,3 +151,21 @@ woof-output_guardian64-1.0/
   package spec.
 * **Audio/media**: kernel `SOUND`/`MEDIA_SUPPORT` are off and the related
   packages removed; re-enable both to get them back.
+
+---
+
+## Appendix: what was validated in this session
+
+* `merge2out woof-distro/x86_64/ubuntu/guardian64` runs clean.
+* Every `PETBUILDS` entry exists in `woof-code/rootfs-petbuilds/`.
+* The Guardian kernel config was resolved with **kconfiglib against the real
+  Linux 6.12.2 Kconfig tree** (no errors):
+  * all boot-critical/hardening symbols end up `=y`
+  * no NIC/WLAN/BT/sound/media/network-FS symbols are left enabled
+    (this required disabling the stock `SCSI_*ISCSI/FCOE` modules which
+    `select ETHERNET`, and `DLM` which `select IP_SCTP` — done in
+    `DOTconfig-6.12.2-x86_64-guardian`)
+  * kept modules: `i915`, `amdgpu`, `nouveau`, `vmwgfx`, `qxl`,
+    `virtio-gpu`, `bochs` plus the normal dependency helpers.
+* Note: `CONFIG_DEBUG_KERNEL` stays `=y` because `EXPERT=y` selects it
+  (harmless; `DEBUG_INFO_NONE` keeps the image lean).

@@ -1025,8 +1025,10 @@ case ${FIRMWARE_OPT} in
 manual)
 	log_msg "once you have manually added firmware to "
 	log_msg "output/${linux_kernel_dir}/lib/firmware"
-	echo "hit ENTER to continue"
-	read firm
+	if [ "$AUTO" != "yes" ] ; then
+		echo "hit ENTER to continue"
+		read firm
+	fi
 ;;
 git)
 	## run the firmware script and re-enter here

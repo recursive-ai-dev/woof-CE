@@ -1,0 +1,17 @@
+#One or more words that identify this distribution:
+DISTRO_NAME='Guardian'
+#version number of this distribution:
+DISTRO_VERSION=1.0
+#The distro whose binary packages were used to build this distribution:
+DISTRO_BINARY_COMPAT='ubuntu'
+#Prefix for some filenames: exs: guardian64.2fs, guardian64-1.0.sfs
+DISTRO_FILE_PREFIX='guardian64'
+#The version of the distro whose binary packages were used to build this distro:
+DISTRO_COMPAT_VERSION='noble'
+#the kernel pet package used:
+DISTRO_KERNEL_PET='Huge_Kernel'
+#read by /usr/bin to bypass Xorg Wizard at first boot:
+DISTRO_XORG_AUTO='yes'
+#subname for online PETs dir.
+DISTRO_DB_SUBNAME='noble64'
+DISTRO_TARGETARCH='x86_64'

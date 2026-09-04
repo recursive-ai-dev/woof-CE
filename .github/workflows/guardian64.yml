@@ -1,0 +1,133 @@
+name: guardian64
+
+# Guardian - minimal, hardened, close-to-airgapped x86_64 UEFI Puppy
+# (Ubuntu 24.04 binary base + custom minimal 6.12.x kernel from
+#  kernel-kit/guardian-build.conf).
+#
+# Trigger manually:  Actions -> guardian64 -> Run workflow
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 420
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Create cache directories
+      run: |
+        mkdir -p local-repositories petbuild-sources petbuild-cache petbuild-output
+        ln -s `pwd`/local-repositories ../local-repositories
+
+    - name: Get cached local-repositories
+      uses: actions/cache@v5
+      with:
+        path: local-repositories
+        key: guardian64-local-repos-${{ github.sha }}
+        restore-keys: |
+          guardian64-local-repos-
+
+    - name: Prepare build environment
+      run: |
+        [ -f local-repositories/vercmp ] || (curl -4 https://raw.githubusercontent.com/puppylinux-woof-CE/initrd_progs/master/pkg/w_apps_static/w_apps/vercmp.c | gcc -x c -o ../local-repositories/vercmp -)
+        sudo install -m 755 local-repositories/vercmp /usr/local/bin/vercmp
+        sudo install -D -m 644 woof-code/rootfs-skeleton/usr/local/petget/categories.dat /usr/local/petget/categories.dat
+        echo "dash dash/sh boolean false" | sudo debconf-set-selections
+        sudo DEBIAN_FRONTEND=noninteractive dpkg-reconfigure dash
+        sudo ln -s bash /bin/ash
+
+    - name: merge2out
+      timeout-minutes: 5
+      run: |
+        yes "" | sudo -E ./merge2out woof-distro/x86_64/ubuntu/guardian64
+        sudo chown -R root:root ../woof-out_*
+
+    - name: Set Guardian branding
+      run: |
+        sudo sed -i 's/^DISTRO_NAME=.*/DISTRO_NAME="Guardian"/' ../woof-out_*/DISTRO_SPECS
+        sudo sed -i 's/^DISTRO_VERSION=.*/DISTRO_VERSION=1.0/' ../woof-out_*/DISTRO_SPECS
+        sudo sed -i 's/^DISTRO_FILE_PREFIX=.*/DISTRO_FILE_PREFIX=guardian64/' ../woof-out_*/DISTRO_SPECS
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y --no-install-recommends dc debootstrap librsvg2-bin zstd xml2 syslinux-utils xorriso squashfs-tools git make gcc file bc flex bison bzip2 xz-utils libssl-dev libelf-dev dwarves pkg-config jq
+
+    - name: 0setup
+      timeout-minutes: 20
+      run: |
+        cd ../woof-out_*
+        sudo -E ./0setup
+
+    - name: 1download
+      timeout-minutes: 150
+      run: |
+        cd ../woof-out_*
+        sudo -E ./1download
+
+    - name: 2createpackages
+      timeout-minutes: 45
+      run: |
+        cd ../woof-out_*
+        echo | sudo -E ./2createpackages
+
+    - name: Get cached kernel sources
+      uses: actions/cache@v5
+      with:
+        path: local-repositories/kernel-kit/sources
+        key: guardian64-kernel-sources-6.12.2
+
+    - name: Build Guardian kernel
+      timeout-minutes: 120
+      run: |
+        cd ../woof-out_*/kernel-kit
+        sudo -E ./build.sh guardian-build.conf auto
+
+    - name: Get cached petbuild-output
+      uses: actions/cache@v5
+      with:
+        path: petbuild-output
+        key: guardian64-petbuild-output-${{ github.sha }}
+        restore-keys: |
+          guardian64-petbuild-output-
+    - name: Get cached petbuild-cache
+      uses: actions/cache@v5
+      with:
+        path: petbuild-cache
+        key: guardian64-petbuild-cache-${{ github.sha }}
+        restore-keys: |
+          guardian64-petbuild-cache-
+    - name: Get cached petbuild-sources
+      uses: actions/cache@v5
+      with:
+        path: petbuild-sources
+        key: guardian64-petbuild-sources-${{ github.sha }}
+        restore-keys: |
+          guardian64-petbuild-sources-
+          petbuild-sources-
+
+    - name: 3builddistro
+      timeout-minutes: 240
+      run: |
+        sudo chown -R root:root petbuild-{sources,cache,output}
+        sudo mv petbuild-{sources,cache,output} ../woof-out_*/
+        cd ../woof-out_*
+        sudo -E HOME=/root XDG_CONFIG_HOME=/root/.config ./3builddistro release
+        sudo chown -R --reference ~ petbuild-{sources,cache,output}
+        sudo mv petbuild-{sources,cache,output} $GITHUB_WORKSPACE/
+
+    - name: Move build output
+      run: |
+        mkdir -p guardian-out
+        for i in `ls ../woof-out_*/woof-output-*/*.{sfs,iso} 2>/dev/null`; do sudo mv -f $i guardian-out/; done
+        sudo chown -R "$USER":"$USER" guardian-out
+
+    - name: Upload Guardian build artifacts
+      uses: actions/upload-artifact@v7
+      with:
+        name: guardian64-puppy
+        path: guardian-out/
+        retention-days: 31

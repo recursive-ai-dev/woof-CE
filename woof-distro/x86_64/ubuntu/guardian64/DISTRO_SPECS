@@ -13,5 +13,5 @@ DISTRO_KERNEL_PET='Huge_Kernel'
 #read by /usr/bin to bypass Xorg Wizard at first boot:
 DISTRO_XORG_AUTO='yes'
 #subname for online PETs dir.
-DISTRO_DB_SUBNAME='guardian64'
+DISTRO_DB_SUBNAME='noble64'
 DISTRO_TARGETARCH='x86_64'
